@@ -6,3 +6,5 @@ Also, special [documentation](https://github.com/netgiro/magento-plugin/blob/mas
 You can download specific .zip versions in [releases](https://github.com/netgiro/magento-plugin/releases)
 
 If the plugin version you need is not listed there, please contact us at netgiro@netgiro.is.
+
+Also, Magento 2 plugin is available online [here](https://marketplace.magento.com/netgiro-gateway.html) 
