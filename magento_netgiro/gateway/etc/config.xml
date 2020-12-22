@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <netgiro>
+                <title>Netgiro payment gateway</title>
+                <active>1</active>
+                <app_id backend_model="Magento\Config\Model\Config\Backend\Encrypted">881E674F-7891-4C20-AFD8-56FE2624C4B5</app_id>
+                <secret_key backend_model="Magento\Config\Model\Config\Backend\Encrypted">YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=</secret_key>
+                <test_mode>1</test_mode>
+                <confirmation_type>0</confirmation_type>
+                <response_url>payment/form/response</response_url>
+                <model>netgiro\gateway\Model\Payment\Netgiro</model>
+                <provider_code>Netgiro</provider_code>
+                <order_status>pending_payment</order_status>
+                <payment_action>sale</payment_action>
+                <is_gateway>1</is_gateway>
+                <can_use_checkout>1</can_use_checkout>
+                <can_initialize>1</can_initialize>
+                <group>Offline</group>
+                <allowspecific>0</allowspecific>
+            </netgiro>
+        </payment>
+    </default>
+</config>

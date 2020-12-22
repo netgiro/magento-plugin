@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<config>
-    <modules>
-        <Programfive_Paymentgateway>
-            <active>true</active>
-            <codePool>local</codePool>
-        </Programfive_Paymentgateway>
-    </modules>
-</config>
