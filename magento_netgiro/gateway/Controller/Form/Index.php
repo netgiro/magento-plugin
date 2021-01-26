@@ -82,6 +82,7 @@ class Index extends Action
 				'PaymentSuccessfulURL' => $responseUrl,
 				'PaymentCancelledURL' => $responseUrl,
 				'PaymentConfirmedURL' => $responseUrl,
+				'ClientInfo' => 'Magento 1.0.1'
 			)
 		);
 		$result = $this->jsonFactory->create();
