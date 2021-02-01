@@ -9,6 +9,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use netgiro\gateway\Helper\Data;
 
 
 class Index extends Action
@@ -33,6 +34,10 @@ class Index extends Action
 	 * @var Session
 	 */
 	private $checkoutSession;
+	/**
+	 * @var Data
+	 */
+	private $data;
 
 
 	public function __construct(
@@ -40,13 +45,15 @@ class Index extends Action
 		JsonFactory $jsonFactory,
 		ScopeConfigInterface $scopeConfig,
 		StoreManagerInterface $storeManager,
-		Session $checkoutSession
+		Session $checkoutSession,
+		Data $data
 	) {
 		parent::__construct($context);
 		$this->jsonFactory = $jsonFactory;
 		$this->scopeConfig = $scopeConfig;
 		$this->storeManager = $storeManager;
 		$this->checkoutSession = $checkoutSession;
+		$this->data = $data;
 	}
 
 	public function execute()
@@ -82,7 +89,7 @@ class Index extends Action
 				'PaymentSuccessfulURL' => $responseUrl,
 				'PaymentCancelledURL' => $responseUrl,
 				'PaymentConfirmedURL' => $responseUrl,
-				'ClientInfo' => 'Magento 1.0.1'
+				'ClientInfo' => 'Magento ' . $this->data->getVersion(),
 			)
 		);
 		$result = $this->jsonFactory->create();
