@@ -61,7 +61,8 @@ class Response extends Action
 		$this->validateResponse($orderId);
 		if (empty($success)) {
 			$this->orderManagement->cancel($orderId);
-			$this->_redirect('checkout/onepage/failure', ['_secure' => true]);
+			$this->messageManager->addErrorMessage('Payment has been cancelled.');
+			$this->_redirect('checkout/cart', ['_secure' => true]);
 			return;
 		}
 
@@ -85,20 +86,20 @@ class Response extends Action
 		$signature = $this->calculateSignature((string) $orderId, (string) $secretKey);
 
 		if ($signature !== $signatureFromResponse) {
-			throw new LocalizedException("Signature error!");
+			throw new LocalizedException(__("Signature error!"));
 		}
 
 
 		$orderExist = !empty($order->getEntityId()) ? TRUE : FALSE;
 
 		if (!$orderExist) {
-			throw new LocalizedException("Order doesn't exist!");
+			throw new LocalizedException(__("Order doesn't exist!"));
 		}
 
 		$paymentMethod = $order->getPayment()->getMethod();
 
 		if ($paymentMethod !== 'netgiro') {
-			throw new LocalizedException("Invalid payment method!");
+			throw new LocalizedException(__("Invalid payment method!"));
 		}
 
 	}
