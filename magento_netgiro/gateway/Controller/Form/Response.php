@@ -4,12 +4,12 @@ namespace netgiro\gateway\Controller\Form;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\Action;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Api\OrderManagementInterface;
 use Magento\Sales\Api\TransactionRepositoryInterface;
 use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use Magento\Sales\Model\OrderRepository;
+use netgiro\gateway\Helper\Validation;
 
 class Response extends Action
 {
@@ -33,9 +33,9 @@ class Response extends Action
 	 */
 	private $orderSender;
 	/**
-	 * @var ScopeConfigInterface
+	 * @var Validation
 	 */
-	private $scopeConfig;
+	private $validation;
 
 	public function __construct(
 		Context $context,
@@ -43,23 +43,30 @@ class Response extends Action
 		OrderRepository $orderRepository,
 		TransactionRepositoryInterface $transactionRepository,
 		OrderSender $orderSender,
-		ScopeConfigInterface $scopeConfig
+		Validation $validation
 	) {
 		parent::__construct($context);
 		$this->orderManagement = $orderManagement;
 		$this->orderRepository = $orderRepository;
 		$this->transactionRepository = $transactionRepository;
 		$this->orderSender = $orderSender;
-		$this->scopeConfig = $scopeConfig;
+		$this->validation = $validation;
 	}
 
 	public function execute()
 	{
 		$success = $this->getRequest()->getParam('success');
 		$orderId = $this->getRequest()->getParam('orderid');
+		$signatureFromResponse = $this->getRequest()->getParam('signature');
+		$order = $this->orderRepository->get($orderId);
 
-		$this->validateResponse($orderId);
-		if (empty($success)) {
+		$validationPass = $this->validation->validateResponse($order, $signatureFromResponse, $orderId);
+		if (empty($success) || !$validationPass) {
+
+			if (!empty($this->validation->exceptionMessage)) {
+				throw new LocalizedException(__($this->validation->exceptionMessage));
+			}
+
 			$this->orderManagement->cancel($orderId);
 			$this->messageManager->addErrorMessage('Payment has been cancelled.');
 			$this->_redirect('checkout/cart', ['_secure' => true]);
@@ -68,46 +75,6 @@ class Response extends Action
 
 		$this->orderSender->send($this->orderRepository->get($orderId));
 		$this->_redirect('checkout/onepage/success', ['_secure' => true]);
-	}
-
-
-	private function validateResponse($orderId)
-	{
-		$signatureFromResponse = $this->getRequest()->getParam('signature');
-		$order = $this->orderRepository->get($orderId);
-
-		$testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
-		if ($testMode) {
-			$secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
-		} else {
-			$secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
-		}
-
-		$signature = $this->calculateSignature((string) $orderId, (string) $secretKey);
-
-		if ($signature !== $signatureFromResponse) {
-			throw new LocalizedException(__("Signature error!"));
-		}
-
-
-		$orderExist = !empty($order->getEntityId()) ? TRUE : FALSE;
-
-		if (!$orderExist) {
-			throw new LocalizedException(__("Order doesn't exist!"));
-		}
-
-		$paymentMethod = $order->getPayment()->getMethod();
-
-		if ($paymentMethod !== 'netgiro') {
-			throw new LocalizedException(__("Invalid payment method!"));
-		}
-
-	}
-
-	private function calculateSignature(string $orderId, string $secret): string
-	{
-		$valueForHash = $secret . $orderId;
-		return hash('sha256', $valueForHash);
 	}
 
 }
