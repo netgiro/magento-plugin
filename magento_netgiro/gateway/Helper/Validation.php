@@ -19,7 +19,7 @@ class Validation
 		$this->scopeConfig = $scopeConfig;
 	}
 
-	public function validateResponse($order, $signatureFromResponse, $orderId)
+	public function validateResponse($order, $signatureFromResponse, $netgiroSignatureFromResponse, $orderId, $transactionID, $numberFormatted, $totalAmount, $statusId)
 	{
 		$testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
 		if ($testMode) {
@@ -32,6 +32,13 @@ class Validation
 
 		if ($signature !== $signatureFromResponse) {
 			$this->exceptionMessage = "Signature error!";
+			return false;
+		}
+
+		$netgiroSignature = $this->calculateNetgiroSignature((string) $secretKey, (string) $orderId, (string) $transactionID, (string) $numberFormatted, (string) $totalAmount, (string) $statusId);
+
+		if ($netgiroSignature !== $netgiroSignatureFromResponse) {
+			$this->exceptionMessage = "Netgiro signature error!";
 			return false;
 		}
 
@@ -58,5 +65,9 @@ class Validation
 		return hash('sha256', $valueForHash);
 	}
 
-
+	private function calculateNetgiroSignature(string $secretKey, string $orderId, string $transactionID, string $numberFormatted, string $totalAmount, string $statusId): string
+	{
+		$valueForHash = $secretKey . $orderId . $transactionID . $numberFormatted . $totalAmount . $statusId;
+		return hash('sha256', $valueForHash);
+	}
 }
