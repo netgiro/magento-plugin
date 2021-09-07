@@ -90,6 +90,7 @@ class Index extends Action
 				'PaymentSuccessfulURL' => $responseUrl,
 				'PaymentCancelledURL' => $responseUrl,
 				'PaymentConfirmedURL' => $callbackUrl,
+				'ConfirmationType' => "1",
 				'ClientInfo' => 'Magento ' . $this->data->getVersion(),
 			)
 		);
