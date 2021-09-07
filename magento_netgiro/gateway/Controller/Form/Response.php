@@ -57,7 +57,6 @@ class Response extends Action
 	{
 		$success = $this->getRequest()->getParam('success');
 		$orderId = $this->getRequest()->getParam('orderid');
-		$signatureFromResponse = $this->getRequest()->getParam('signature');
 		$netgiroSignatureFromResponse = $this->getRequest()->getParam('netgiroSignature');
 		$transactionID = $this->getRequest()->getParam('transactionid');
 		$numberFormatted = $this->getRequest()->getParam('invoiceNumber');
@@ -66,7 +65,6 @@ class Response extends Action
 		$order = $this->orderRepository->get($orderId);
 
 		$validationPass = $this->validation->validateResponse($order,
-															  $signatureFromResponse,
 															  $netgiroSignatureFromResponse,
 															  $orderId,
 															  $transactionID,
