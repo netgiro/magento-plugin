@@ -73,6 +73,7 @@ class Index extends Action
 
 		$baseUrl = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB, true);
 		$responseUrl = $baseUrl . $this->scopeConfig->getValue('payment/netgiro/response_url');
+		$callbackUrl = $baseUrl . $this->scopeConfig->getValue('payment/netgiro/callback_url');
 
 		$orderId = $this->checkoutSession->getLastRealOrder()->getId();
 		$totalAmount = (int) $this->checkoutSession->getLastRealOrder()->getGrandTotal();
@@ -88,7 +89,8 @@ class Index extends Action
 				'OrderId' => $orderId,
 				'PaymentSuccessfulURL' => $responseUrl,
 				'PaymentCancelledURL' => $responseUrl,
-				'PaymentConfirmedURL' => $responseUrl,
+				'PaymentConfirmedURL' => $callbackUrl,
+				'ConfirmationType' => "1",
 				'ClientInfo' => 'Magento ' . $this->data->getVersion(),
 			)
 		);
