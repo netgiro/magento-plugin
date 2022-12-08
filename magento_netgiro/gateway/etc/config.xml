@@ -10,6 +10,7 @@
                 <test_mode>1</test_mode>
                 <confirmation_type>0</confirmation_type>
                 <response_url>payment/form/response</response_url>
+                <callback_url>payment/form/callback</callback_url>
                 <model>netgiro\gateway\Model\Payment\Netgiro</model>
                 <provider_code>Netgiro</provider_code>
                 <order_status>pending_payment</order_status>
@@ -17,7 +18,7 @@
                 <is_gateway>1</is_gateway>
                 <can_use_checkout>1</can_use_checkout>
                 <can_initialize>1</can_initialize>
-                <group>Offline</group>
+                <group>offline</group>
                 <allowspecific>0</allowspecific>
             </netgiro>
         </payment>

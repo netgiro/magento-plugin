@@ -42,7 +42,7 @@ Extension is stored in
 When you install the extension its disabled you need to enable it
 
 ```
-cd bitnami/magento
+cd /bitnami/magento
 composer require netgiro/gateway:1.0.4
 magento module:status netgiro_gateway
 magento module:enable netgiro_gateway --clear-static-content

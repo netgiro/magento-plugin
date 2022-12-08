@@ -4,6 +4,7 @@ namespace netgiro\gateway\Controller\Form;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\Action;
+use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Api\OrderManagementInterface;
 use Magento\Sales\Api\TransactionRepositoryInterface;
@@ -11,7 +12,7 @@ use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use Magento\Sales\Model\OrderRepository;
 use netgiro\gateway\Helper\Validation;
 
-class Response extends Action
+class Callback extends Action
 {
 
 	/**
@@ -37,6 +38,7 @@ class Response extends Action
 	 */
 	private $validation;
 
+
 	public function __construct(
 		Context $context,
 		OrderManagementInterface $orderManagement,
@@ -55,6 +57,8 @@ class Response extends Action
 
 	public function execute()
 	{
+		$result = $this->resultFactory
+			->create(ResultFactory::TYPE_JSON);
 		$success = $this->getRequest()->getParam('success');
 		$orderId = $this->getRequest()->getParam('orderid');
 		$netgiroSignatureFromResponse = $this->getRequest()->getParam('netgiroSignature');
@@ -78,13 +82,12 @@ class Response extends Action
 			}
 
 			$this->orderManagement->cancel($orderId);
-			$this->messageManager->addErrorMessage('Payment has been cancelled.');
-			$this->_redirect('checkout/cart', ['_secure' => true]);
-			return;
+			return $result->setHttpResponseCode(500);
 		}
 
 		$this->orderSender->send($this->orderRepository->get($orderId));
-		$this->_redirect('checkout/onepage/success', ['_secure' => true]);
+		return $result->setHttpResponseCode(200);
 	}
+
 
 }
