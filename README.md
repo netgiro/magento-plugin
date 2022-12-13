@@ -43,7 +43,7 @@ When you install the extension its disabled you need to enable it
 
 ```
 cd /bitnami/magento
-composer require netgiro/gateway:1.0.4
+composer require netgiro/gateway:2.0.1
 magento module:status netgiro_gateway
 magento module:enable netgiro_gateway --clear-static-content
 magento setup:upgrade
