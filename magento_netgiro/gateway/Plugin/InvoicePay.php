@@ -41,19 +41,24 @@ class InvoicePay
      */
     public function afterSave($subject,  $invoice)
     {
-        $orderId = $invoice->getOrderId();
 
+        $payment = $subject->getOrder()->getPayment();
+        $paymentMethodCode = $payment->getMethodInstance()->getCode();
+        if( $paymentMethodCode !=='netgiro' ){
+            return [$invoice];
+        }
+
+        $orderId = $invoice->getOrderId();
         $transaction = $this->transactionRepository->getByTransactionType(
             TransactionInterface::TYPE_CAPTURE,
             $orderId
         );
 
-        //TODO  Villa geri ráð fyrir að það sé til transaction og 
-        //      gæti verið að rugla í enhverjum öðrum payment provider
-
-        $transactionId = $transaction->getId();
-        $invoice->setTransactionId($transactionId);
-        $this->invoiceRepository->save($invoice);
+        if($transaction) {
+            $transactionId = $transaction->getId();
+            $invoice->setTransactionId($transactionId);
+            $this->invoiceRepository->save($invoice);
+        }
         return [$invoice];
     }
 
