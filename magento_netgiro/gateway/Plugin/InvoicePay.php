@@ -54,7 +54,6 @@ class InvoicePay
         $transactionId = $transaction->getId();
         $invoice->setTransactionId($transactionId);
         $this->invoiceRepository->save($invoice);
-        $this->sendToWebhook(['orderId' => $orderId, 'transactionId' => $transactionId ]);
         return [$invoice];
     }
 

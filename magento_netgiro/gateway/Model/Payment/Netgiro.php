@@ -109,8 +109,10 @@ class Netgiro extends AbstractMethod
 		} else {
 			$resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $amount);
 		}
-     	
+
 		//TODO grípa Resp og bregðast við svari
+		// gott væri að búa til transaction 
+		// væri lika ráðlegt að reykna út validateResponse
 
 		return $this;
     }
@@ -154,7 +156,7 @@ class Netgiro extends AbstractMethod
         return $this->curl->getBody();
 	}
 	private function sendPaymentChangeRequest( $transactionId , $amount) {
-		throw new \Exception("Can only refund whole orders, Total order amount and refund amount need to be same number");
+		throw new \Exception("Refunds can only be processed for the entire order. Please ensure that the total order amount and refund amount are the same.");
 		//TODO skoða hvernig best er að breyta skuld ef hún er endurgreidd að hluta
 	}
 	
