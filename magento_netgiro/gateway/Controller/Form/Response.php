@@ -2,14 +2,15 @@
 
 namespace netgiro\gateway\Controller\Form;
 
+use netgiro\gateway\Helper\Validation;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\Action;
-use Magento\Framework\Exception\LocalizedException;
+use Magento\Sales\Model\OrderRepository;
 use Magento\Sales\Api\OrderManagementInterface;
+use Magento\Sales\Api\Data\TransactionInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Api\TransactionRepositoryInterface;
 use Magento\Sales\Model\Order\Email\Sender\OrderSender;
-use Magento\Sales\Model\OrderRepository;
-use netgiro\gateway\Helper\Validation;
 
 class Response extends Action
 {
@@ -43,8 +44,8 @@ class Response extends Action
 		OrderRepository $orderRepository,
 		TransactionRepositoryInterface $transactionRepository,
 		OrderSender $orderSender,
-		Validation $validation
-	) {
+		Validation $validation 
+		) {
 		parent::__construct($context);
 		$this->orderManagement = $orderManagement;
 		$this->orderRepository = $orderRepository;
@@ -63,6 +64,7 @@ class Response extends Action
 		$totalAmount = $this->getRequest()->getParam('totalAmount');
 		$statusId = $this->getRequest()->getParam('status');
 		$order = $this->orderRepository->get($orderId);
+		$paymentId = $order->getPayment()->getEntityId();
 
 		$validationPass = $this->validation->validateResponse($order,
 															  $netgiroSignatureFromResponse,
@@ -83,7 +85,18 @@ class Response extends Action
 			return;
 		}
 
+		$transaction = $this->_objectManager->create(TransactionInterface::class);
+		$transaction->setOrderId($orderId)
+			->setOrderPaymentObject($order->getPayment())
+			->setPaymentId($paymentId) 
+			->setTxnId($transactionID)
+			->setParentTxnId($transactionID) // TODO Hvað er rökrétt value hér
+			->setTxnType(TransactionInterface::TYPE_CAPTURE)
+			->setIsClosed(false);
+		$this->transactionRepository->save($transaction);
+
 		$this->orderSender->send($this->orderRepository->get($orderId));
+
 		$this->_redirect('checkout/onepage/success', ['_secure' => true]);
 	}
 
