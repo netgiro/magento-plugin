@@ -100,34 +100,33 @@ class Netgiro extends AbstractMethod
             $payment->getOrder()->getId()
         );
 
-		$resp = $this->sendPaymentCancelRequest($transaction->getTxnId(), $amount);
-		$this->sendToWebhook(json_encode($resp));
-
 		if (!$this->canRefund()) {
             throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
         }
 
-		throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
+		if($this->formatNumber($payment->getOrder()->getGrandTotal()) == $this->formatNumber($amount)){
+			$resp = $this->sendPaymentCancelRequest($transaction->getTxnId(), $amount);
+		} else {
+			$resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $amount);
+		}
+     	
+		//TODO grípa Resp og bregðast við svari
 
-
-
-     return $this;
+		return $this;
     }
 
+	private function formatNumber($number){
+		return (string)number_format($number, 2);
+	}
+
 	private function sendPaymentCancelRequest( $transactionId , $amount) {
-
-		$f = '2023-02-21T00:00:01.865Z';
-		$l = '2023-02-23T23:59:01.865Z';
-        $url = 'https://test.netgiro.is/Sales/GetList?startDate='.$f.'&endDate='.$l ;
-
 		$testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
 		if ($testMode) {
-			$action = 'https://test.netgiro.is/securepay';
+			$action = 'https://test.netgiro.is/api/payment/cancel';
 			$appId = '881E674F-7891-4C20-AFD8-56FE2624C4B5';
 			$secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
-
 		} else {
-			$action = 'https://securepay.netgiro.is/v1/';
+			$action = 'https://securepay.netgiro.is/v1/api/payment/cancel';
 			$appId = $this->scopeConfig->getValue('payment/netgiro/app_id');
 			$secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
 		}
@@ -138,60 +137,25 @@ class Netgiro extends AbstractMethod
     		'cancelationFeeAmount' => 0
 		]);
 		
+		$nonce = (string) microtime(true) * 10000000;
+		$signature = hash( 'sha256',$secretKey . $nonce . $action . $postBody);
+
 		$this->curl->setHeaders(
 			['Content-Type' => 'application/json',
-			'NETGIRO-APPKEY'=> $appId,
-			'NETGIRO-NONCE' => microtime(true) * 10000000,
-			'NETGIRO-SIGNATURE' => hash('sha256', $secretKey . (string)microtime(true) * 10000000 . $url /*. $postBody*/ ),
+			'NETGIRO_APPKEY'=> $appId,
+			'NETGIRO_NONCE' => $nonce,
+			'NETGIRO_SIGNATURE' => $signature,
 			]
 		);
 
-        $url = 'https://webhook.site/54a492cf-4a81-4e99-913d-454c912cad8c';
-		$this->curl->get($url /*$postBody*/);
+		$this->curl->post($action, $postBody);
 
-		$f = '2023-02-21T00:00:01.865Z';
-		$l = '2023-02-23T23:59:01.865Z';
-        $url = 'https://test.netgiro.is/' . 'Sales/GetList?startDate='.$f.'&endDate='.$l ;
-		$this->curl->get($url /*$postBody*/);
 
         return $this->curl->getBody();
 	}
 	private function sendPaymentChangeRequest( $transactionId , $amount) {
-		throw new \Exception("not implemented");
-        $url = 'https://webhook.site/54a492cf-4a81-4e99-913d-454c912cad8c';
-
-		$testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
-		//TODO prufa tengjst get
-		if ($testMode) {
-			$action = 'https://test.netgiro.is/payment/cancel';
-			$appId = '881E674F-7891-4C20-AFD8-56FE2624C4B5';
-			$secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
-		} else {
-			$action = 'https://securepay.netgiro.is/v1/';
-			$appId = $this->scopeConfig->getValue('payment/netgiro/app_id');
-			$secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
-		}
-		
-		$postBody = json_encode([
-			'transactionId' => $transactionId,
-			'amount' => $amount,
-			$testMode,
-			$action,
-			$appId,
-			$secretKey
-		]);
-
-		$this->curl->setHeaders(
-			[
-				'Content-Type' => 'application/json',
-				'NETGIRO_APPKEY' => '??',
-				'X-Timestamp' => "??",
-				'NETGIRO_SIGNATURE' => '??',			
-			]
-		);
-
-        $this->curl->post($url, $postBody);
-        return $this->curl->getBody();
+		throw new \Exception("Can only refund whole orders, Total order amount and refund amount need to be same number");
+		//TODO skoða hvernig best er að breyta skuld ef hún er endurgreidd að hluta
 	}
 	
 	
