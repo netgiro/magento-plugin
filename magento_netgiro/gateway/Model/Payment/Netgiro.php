@@ -3,6 +3,8 @@ namespace netgiro\gateway\Model\Payment;
 use Magento\Payment\Model\InfoInterface;
 use Magento\Payment\Model\Method\AbstractMethod;
 use Magento\Sales\Model\Order\Payment\Transaction;
+use Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface;
+use Magento\Sales\Model\Order\Payment;
 
 
 class Netgiro extends AbstractMethod
@@ -27,6 +29,10 @@ class Netgiro extends AbstractMethod
 	 */
 	private $jsonFactory;
 
+	/**
+     * @var BuilderInterface
+     */
+    protected $transactionBuilder;
 
 	/**
 	 * @var ScopeConfigInterface
@@ -60,6 +66,7 @@ class Netgiro extends AbstractMethod
 		\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
 		\Magento\Payment\Model\Method\Logger $logger,
 		\Magento\Sales\Api\TransactionRepositoryInterface $transactionRepository,
+		BuilderInterface $transactionBuilder,
 		\Magento\Framework\HTTP\Client\Curl $curl,
 		\Magento\Framework\Controller\Result\JsonFactory $jsonFactory,
 		\Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
@@ -70,6 +77,8 @@ class Netgiro extends AbstractMethod
 		$this->curl = $curl;
 		$this->scopeConfig = $scopeConfig;
 		$this->jsonFactory = $jsonFactory;
+		$this->transactionBuilder = $transactionBuilder;
+
 		parent::__construct(
 			$context,
 			$registry,
@@ -93,11 +102,14 @@ class Netgiro extends AbstractMethod
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws InvalidTransitionException
      */
-	public function refund(\Magento\Payment\Model\InfoInterface $payment, $amount)
+	public function refund(InfoInterface $payment, $amount)
     {
+		$paymentInstance = $payment->getOrder()->getPayment();
+		$orderId = $payment->getOrder()->getId();
+
 		$transaction = $this->transactionRepository->getByTransactionType(
             Transaction::TYPE_CAPTURE,
-            $payment->getOrder()->getId()
+            $orderId
         );
 
 		if (!$this->canRefund()) {
@@ -109,12 +121,23 @@ class Netgiro extends AbstractMethod
 		} else {
 			$resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $amount);
 		}
+		$resp = json_decode($resp);
 
-		//TODO grípa Resp og bregðast við svari
-		// gott væri að búa til transaction 
-		// væri lika ráðlegt að reykna út validateResponse
+		if($resp->ResultCode == 10201){
 
-		return $this;
+			$newTransaction = $this->transactionBuilder->setPayment($paymentInstance)
+				->setOrder($payment->getOrder())
+				->setTransactionId($transaction->getTxnId())
+				->setFailSafe(true)
+				->build(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_REFUND);
+
+			$payment->setIsTransactionClosed(true);
+			$payment->addTransactionCommentsToOrder($newTransaction, 'order refunded');
+
+			return $this;
+		}
+
+		throw new \Exception($resp->Message);
     }
 
 	private function formatNumber($number){
