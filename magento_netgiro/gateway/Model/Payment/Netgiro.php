@@ -116,35 +116,45 @@ class Netgiro extends AbstractMethod
             throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
         }
 
-		if($this->formatNumber($payment->getOrder()->getGrandTotal()) == $this->formatNumber($amount)){
-			$resp = $this->sendPaymentCancelRequest($transaction->getTxnId(), $amount);
-		} else {
-			$resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $amount);
+		if( $this->formatNumber( $payment->getOrder()->getGrandTotal()) == $this->formatNumber($payment->getOrder()->getTotalRefunded()) ){
+			$resp = $this->sendPaymentCancelRequest($transaction->getTxnId());
+			$resp = json_decode($resp);
+			if($resp->ResultCode == 10201){
+				$newTransaction = $this->transactionBuilder->setPayment($paymentInstance)
+					->setOrder($payment->getOrder())
+					->setTransactionId($transaction->getTxnId() . "_" . (string) time())
+					->setFailSafe(true)
+					->build(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_REFUND);
+	
+				$payment->setIsTransactionClosed(true);
+				$payment->addTransactionCommentsToOrder($newTransaction, 'order refunded');
+				return $this;
+			}
+			throw new \Exception($resp->Message);
+
+		} else {	
+			$resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $payment->getOrder()->getGrandTotal() - $payment->getOrder()->getTotalRefunded());
+			$resp = json_decode($resp);
+			if($resp->ResultCode == 200){
+				$newTransaction = $this->transactionBuilder->setPayment($paymentInstance)
+					->setOrder($payment->getOrder())
+					->setTransactionId( $resp->Result->TransactionId . "_" . (string) time())
+					->setFailSafe(true)
+					->build(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_REFUND);
+					
+				$payment->addTransactionCommentsToOrder($newTransaction, 'order refunded');
+				return $this;
+			}
+			throw new \Exception($resp->Message);
 		}
-		$resp = json_decode($resp);
-
-		if($resp->ResultCode == 10201){
-
-			$newTransaction = $this->transactionBuilder->setPayment($paymentInstance)
-				->setOrder($payment->getOrder())
-				->setTransactionId($transaction->getTxnId())
-				->setFailSafe(true)
-				->build(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_REFUND);
-
-			$payment->setIsTransactionClosed(true);
-			$payment->addTransactionCommentsToOrder($newTransaction, 'order refunded');
-
-			return $this;
-		}
-
-		throw new \Exception($resp->Message);
+		
     }
 
 	private function formatNumber($number){
 		return (string)number_format($number, 2);
 	}
 
-	private function sendPaymentCancelRequest( $transactionId , $amount) {
+	private function sendPaymentCancelRequest( $transactionId ) {
 		$testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
 		if ($testMode) {
 			$action = 'https://test.netgiro.is/api/payment/cancel';
@@ -179,11 +189,58 @@ class Netgiro extends AbstractMethod
         return $this->curl->getBody();
 	}
 	private function sendPaymentChangeRequest( $transactionId , $amount) {
-		throw new \Exception("Refunds can only be processed for the entire order. Please ensure that the total order amount and refund amount are the same.");
-		//TODO skoða hvernig best er að breyta skuld ef hún er endurgreidd að hluta
+
+		$testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
+		if ($testMode) {
+			$action = 'https://test.netgiro.is/api/payment/change';
+			$appId = '881E674F-7891-4C20-AFD8-56FE2624C4B5';
+			$secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
+		} else {
+			$action = 'https://securepay.netgiro.is/v1/api/payment/change';
+			$appId = $this->scopeConfig->getValue('payment/netgiro/app_id');
+			$secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
+		}
+
+		$postBody = json_encode([
+				"transactionId" => $transactionId,
+				"message"=> "Order Changed in Magento2 store",
+				//"referenceNumber"=> "38",
+				"totalAmount"=> $amount,
+				//"shippingAmount"=> 0,
+				//"handlingAmount"=> 0,
+				//"discountAmount"=> 0,
+				"items"=> [
+				  [
+					//"productNo"=> "",
+					//"name"=> "",
+					//"description"=> "",
+					"amount"=> 1,
+					"unitPrice"=> $amount
+				  ]
+				],
+				//"currentTimeUtc"=> "YYYY-mm-ddThh:mm:ss.mmmZ",
+				//"validToTimeUtc"=> "YYYY-mm-ddThh:mm:ss.mmmZ",
+				//"description"=> "",
+				//"ipAddress"=> ""
+				]
+		);
+		$nonce = (string) microtime(true) * 10000000;
+		$signature = hash( 'sha256', $secretKey . $nonce . $action . $postBody);
+
+		$this->curl->setHeaders(
+			['Content-Type' => 'application/json',
+			'NETGIRO_APPKEY'=> $appId,
+			'NETGIRO_NONCE' => $nonce,
+			'NETGIRO_SIGNATURE' => $signature,
+			]
+		);
+
+		$this->curl->post($action, $postBody);
+		
+		return $this->curl->getBody();
 	}
 	
-	
+
 	public function sendToWebhook($message = "")
 	{
 		$url = 'https://webhook.site/54a492cf-4a81-4e99-913d-454c912cad8c';
