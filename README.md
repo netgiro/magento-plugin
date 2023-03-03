@@ -51,3 +51,17 @@ magento setup:di:compile
 magento cache:clean
 magento cache:flush
 ```
+
+## Development environment
+To add latest development version of plugin to environment run and enable it with command 
+```
+docker cp ./magento_netgiro magent-netgiro-plugin_magento_1:/bitnami/magento/app/code/netgiro &&
+docker exec -it magent-netgiro-plugin_magento_1 bash
+
+cd /bitnami/magento &&
+php bin/magento module:enable netgiro_gateway &&
+php bin/magento setup:upgrade &&
+php bin/magento setup:di:compile &&
+php bin/magento cache:clean &&
+php bin/magento cache:flush
+```
