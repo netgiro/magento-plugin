@@ -14,7 +14,6 @@ class Netgiro extends AbstractMethod
 
 	protected $_canRefund = true;
 	protected $_isGateway = true;
-
 	protected $_canRefundInvoicePartial = true;
 
 	/**
@@ -112,7 +111,7 @@ class Netgiro extends AbstractMethod
             $orderId
         );
 
-		if (!$this->canRefund()) {
+		if (!$this->_canRefund) {
             throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
         }
 
@@ -240,20 +239,4 @@ class Netgiro extends AbstractMethod
 		return $this->curl->getBody();
 	}
 	
-
-	public function sendToWebhook($message = "")
-	{
-		$url = 'https://webhook.site/54a492cf-4a81-4e99-913d-454c912cad8c';
-
-		$body = ['msg' => $message];
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'undirstik_undirstik: sæll'));
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-		curl_exec($ch);
-		curl_close($ch);
-	}
 }
