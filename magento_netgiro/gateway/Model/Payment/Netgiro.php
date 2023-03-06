@@ -129,7 +129,7 @@ class Netgiro extends AbstractMethod
 				$payment->addTransactionCommentsToOrder($newTransaction, 'order refunded');
 				return $this;
 			}
-			throw new \Exception($resp->Message);
+			throw new \Exception( 'Netgíró : ' . $resp->Message);
 
 		} else {	
 			$resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $payment->getOrder()->getGrandTotal() - $payment->getOrder()->getTotalRefunded());
@@ -144,7 +144,7 @@ class Netgiro extends AbstractMethod
 				$payment->addTransactionCommentsToOrder($newTransaction, 'order refunded');
 				return $this;
 			}
-			throw new \Exception($resp->Message);
+			throw new \Exception( 'Netgíró : ' . $resp->Message);
 		}
 		
     }
@@ -213,8 +213,9 @@ class Netgiro extends AbstractMethod
 					//"productNo"=> "",
 					//"name"=> "",
 					//"description"=> "",
-					"amount"=> 1,
-					"unitPrice"=> $amount
+					"amount" => $amount,
+					"quantity"=> 1000, // TODO spyrja afhvertju þetta getur ekki verið 1.
+					"unitPrice" => $amount
 				  ]
 				],
 				//"currentTimeUtc"=> "YYYY-mm-ddThh:mm:ss.mmmZ",
