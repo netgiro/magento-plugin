@@ -6,7 +6,6 @@ use Magento\Sales\Api\Data\TransactionInterface;
 use Magento\Sales\Api\InvoiceRepositoryInterface;
 use Magento\Sales\Api\TransactionRepositoryInterface;
 
-
 class InvoicePay
 {
     /**
@@ -29,7 +28,8 @@ class InvoicePay
      *
      * @param InvoiceRepositoryInterface $invoiceRepository
      */
-    public function __construct( InvoiceRepositoryInterface $invoiceRepository, TransactionRepositoryInterface $transactionRepository ) {
+    public function __construct(InvoiceRepositoryInterface $invoiceRepository, TransactionRepositoryInterface $transactionRepository)
+    {
         $this->invoiceRepository = $invoiceRepository;
         $this->transactionRepository = $transactionRepository;
     }
@@ -39,12 +39,12 @@ class InvoicePay
      * @param InvoiceInterface $invoice
      * @return InvoiceInterface
      */
-    public function afterSave($subject,  $invoice)
+    public function afterSave($subject, $invoice)
     {
 
         $payment = $subject->getOrder()->getPayment();
         $paymentMethodCode = $payment->getMethodInstance()->getCode();
-        if( $paymentMethodCode !=='netgiro' ){
+        if ($paymentMethodCode !=='netgiro') {
             return [$invoice];
         }
 
@@ -54,12 +54,11 @@ class InvoicePay
             $orderId
         );
 
-        if($transaction) {
+        if ($transaction) {
             $transactionId = $transaction->getId();
             $invoice->setTransactionId($transactionId);
             $this->invoiceRepository->save($invoice);
         }
         return [$invoice];
     }
-
 }
