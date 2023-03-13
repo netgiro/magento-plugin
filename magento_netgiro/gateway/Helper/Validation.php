@@ -7,13 +7,17 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 class Validation
 {
 
+    /**
+     * @var string
+     */
     public $exceptionMessage = "";
 
     /**
+     * @inheritDoc
+     *
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
-
 
     public function __construct(ScopeConfigInterface $scopeConfig)
     {

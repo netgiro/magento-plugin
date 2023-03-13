@@ -17,10 +17,15 @@
                                                         <item name="renders" xsi:type="array">
                                                             <item name="children" xsi:type="array">
                                                                 <item name="netgiro" xsi:type="array">
-                                                                    <item name="component" xsi:type="string">netgiro_gateway/js/view/payment/netgiro</item>
+                                                                    <item 
+                                                                        name="component" 
+                                                                        xsi:type="string"
+                                                                    >netgiro_gateway/js/view/payment/netgiro</item>
                                                                     <item name="methods" xsi:type="array">
                                                                         <item name="netgiro" xsi:type="array">
-                                                                            <item name="isBillingAddressRequired" xsi:type="boolean">true</item>
+                                                                            <item 
+                                                                                name="isBillingAddressRequired" 
+                                                                                xsi:type="boolean">true</item>
                                                                         </item>
                                                                     </item>
                                                                 </item>
