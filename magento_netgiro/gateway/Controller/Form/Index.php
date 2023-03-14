@@ -2,14 +2,15 @@
 
 namespace netgiro\gateway\Controller\Form;
 
+use netgiro\gateway\Helper\Data;
+use netgiro\gateway\Model\Config;
 use Magento\Checkout\Model\Session;
+use Magento\Framework\UrlInterface;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\Controller\Result\JsonFactory;
-use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use netgiro\gateway\Helper\Data;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 
 class Index extends Action
 {
@@ -38,12 +39,18 @@ class Index extends Action
      */
     private $data;
 
+    /**
+     * @var Config 
+     */
+    private $config;
+
 
     public function __construct(
         Context $context,
         JsonFactory $jsonFactory,
         ScopeConfigInterface $scopeConfig,
         StoreManagerInterface $storeManager,
+        Config $config,
         Session $checkoutSession,
         Data $data
     ) {
@@ -53,22 +60,15 @@ class Index extends Action
         $this->storeManager = $storeManager;
         $this->checkoutSession = $checkoutSession;
         $this->data = $data;
+        $this->config = $config;
     }
 
     public function execute()
     {
-        $testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
 
-        if ($testMode) {
-            $action = 'https://test.netgiro.is/securepay';
-            $appId = '881E674F-7891-4C20-AFD8-56FE2624C4B5';
-            $secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
-
-        } else {
-            $action = 'https://securepay.netgiro.is/v1/';
-            $appId = $this->scopeConfig->getValue('payment/netgiro/app_id');
-            $secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
-        }
+        $action = $this->config->getAction("securepay");
+        $appId = $this->config->getAppId();
+        $secretKey = $this->config->getSecretKey();
 
         $baseUrl = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_WEB, true);
         $responseUrl = $baseUrl . $this->scopeConfig->getValue('payment/netgiro/response_url');
