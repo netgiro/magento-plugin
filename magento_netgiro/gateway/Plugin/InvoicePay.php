@@ -42,7 +42,7 @@ class InvoicePay
         $payment = $subject->getOrder()->getPayment();
         $paymentMethodCode = $payment->getMethodInstance()->getCode();
         if ($paymentMethodCode !=='netgiro') {
-            return [$invoice];
+            return $invoice;
         }
 
         $orderId = $invoice->getOrderId();
@@ -56,6 +56,6 @@ class InvoicePay
             $invoice->setTransactionId($transactionId);
             $this->invoiceRepository->save($invoice);
         }
-        return [$invoice];
+        return $invoice;
     }
 }
