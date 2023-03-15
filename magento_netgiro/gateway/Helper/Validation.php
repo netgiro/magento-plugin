@@ -13,20 +13,53 @@ class Validation
     public $exceptionMessage = "";
 
     /**
-     * @var Config 
+     * The Config instance.
+     *
+     * @var Config
      */
     private $config;
 
-    public function __construct(Config $config, )
+    /**
+     * Class constructor.
+     *
+     * @param \Magento\Framework\App\Config $config
+     */
+    public function __construct(Config $config)
     {
         $this->config = $config;
     }
 
-    public function validateResponse($order, $netgiroSignatureFromResponse, $orderId, $transactionID, $numberFormatted, $totalAmount, $statusId)
-    {
+    /**
+     * Validate response.
+     *
+     * @param object $order
+     * @param string $netgiroSignatureFromResponse
+     * @param string $orderId
+     * @param string $transactionID
+     * @param string $numberFormatted
+     * @param string $totalAmount
+     * @param string $statusId
+     * @return bool
+     */
+    public function validateResponse(
+        $order,
+        $netgiroSignatureFromResponse,
+        $orderId,
+        $transactionID,
+        $numberFormatted,
+        $totalAmount,
+        $statusId
+    ) {
         $secretKey = $this->config->getSecretKey();
 
-        $netgiroSignature = $this->calculateNetgiroSignature((string) $secretKey, (string) $orderId, (string) $transactionID, (string) $numberFormatted, (string) $totalAmount, (string) $statusId);
+        $netgiroSignature = $this->calculateNetgiroSignature(
+            (string) $secretKey,
+            (string) $orderId,
+            (string) $transactionID,
+            (string) $numberFormatted,
+            (string) $totalAmount,
+            (string) $statusId
+        );
 
         if ($netgiroSignature !== $netgiroSignatureFromResponse) {
             $this->exceptionMessage = "Netgiro signature error!";
@@ -50,8 +83,25 @@ class Validation
         return true;
     }
 
-    private function calculateNetgiroSignature(string $secretKey, string $orderId, string $transactionID, string $numberFormatted, string $totalAmount, string $statusId): string
-    {
+    /**
+     * Calculate Netgiro signature.
+     *
+     * @param string $secretKey
+     * @param string $orderId
+     * @param string $transactionID
+     * @param string $numberFormatted
+     * @param string $totalAmount
+     * @param string $statusId
+     * @return string
+     */
+    private function calculateNetgiroSignature(
+        string $secretKey,
+        string $orderId,
+        string $transactionID,
+        string $numberFormatted,
+        string $totalAmount,
+        string $statusId
+    ): string {
         $valueForHash = $secretKey . $orderId . $transactionID . $numberFormatted . $totalAmount . $statusId;
         return hash('sha256', $valueForHash);
     }

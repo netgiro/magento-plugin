@@ -10,13 +10,21 @@ use Magento\Framework\App\Helper\Context;
 class Data extends AbstractHelper
 {
 
-    const MODULE_NAME = 'netgiro_gateway';
+    public const MODULE_NAME = 'netgiro_gateway';
 
     /**
-     * @param \Magento\Framework\Module\ModuleListInterface $moduleList
+     * Class description goes here
+     *
+     * @var ModuleListInterface $moduleList
      */
     protected $_moduleList;
 
+    /**
+     * Class constructor.
+     *
+     * @param \Magento\Framework\App\Action\Context $context
+     * @param \Magento\Framework\Module\ModuleListInterface $moduleList
+     */
     public function __construct(
         Context $context,
         ModuleListInterface $moduleList
@@ -25,6 +33,12 @@ class Data extends AbstractHelper
         parent::__construct($context);
     }
 
+    /**
+     * Get configuration value.
+     *
+     * @param string $config_path
+     * @return mixed
+     */
     public function getConfig($config_path)
     {
         return $this->scopeConfig->getValue(
@@ -33,6 +47,11 @@ class Data extends AbstractHelper
         );
     }
 
+    /**
+     * Get module version.
+     *
+     * @return string
+     */
     public function getVersion()
     {
         return $this->_moduleList

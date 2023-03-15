@@ -40,11 +40,23 @@ class Index extends Action
     private $data;
 
     /**
-     * @var Config 
+     * The Config instance.
+     *
+     * @var Config
      */
     private $config;
 
-
+    /**
+     * Constructor.
+     *
+     * @param Context $context
+     * @param JsonFactory $jsonFactory
+     * @param ScopeConfigInterface $scopeConfig
+     * @param StoreManagerInterface $storeManager
+     * @param Config $config
+     * @param Session $checkoutSession
+     * @param Data $data
+     */
     public function __construct(
         Context $context,
         JsonFactory $jsonFactory,
@@ -63,6 +75,12 @@ class Index extends Action
         $this->config = $config;
     }
 
+    /**
+     * Execute the action.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
     public function execute()
     {
 
@@ -98,7 +116,15 @@ class Index extends Action
         return $result->setData($post_data);
     }
 
-
+    /**
+     * Calculate signature for Netgiro request
+     *
+     * @param string $secret Secret key for the Netgiro account
+     * @param string $orderId Order ID
+     * @param string $totalAmount Total amount of the order
+     * @param string $appId Application ID for the Netgiro account
+     * @return string Signature calculated using sha256 hash algorithm
+     */
     private function calculateSignature(string $secret, string $orderId, string $totalAmount, string $appId): string
     {
         $valueForHash = $secret . $orderId . $totalAmount . $appId;

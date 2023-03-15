@@ -1,12 +1,24 @@
 <?php
 namespace netgiro\gateway\Model\Payment;
 
-use netgiro\gateway\Helper\NetgiroConfig;
 use Magento\Sales\Model\Order\Payment;
 use Magento\Payment\Model\InfoInterface;
 use Magento\Payment\Model\Method\AbstractMethod;
 use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface;
+use Magento\Framework\Model\Context;
+use Magento\Framework\Registry;
+use Magento\Framework\Api\ExtensionAttributesFactory;
+use Magento\Framework\Api\AttributeValueFactory;
+use Magento\Payment\Helper\Data;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Payment\Model\Method\Logger;
+use Magento\Sales\Api\TransactionRepositoryInterface;
+use netgiro\gateway\Model\Config;
+use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Model\ResourceModel\AbstractResource;
+use Magento\Framework\Data\Collection\AbstractDb;
 
 class Netgiro extends AbstractMethod
 {
@@ -65,44 +77,44 @@ class Netgiro extends AbstractMethod
     private $scopeConfig;
 
     /**
-     * @var \netgiro\gateway\Model\Config 
+     * @var \netgiro\gateway\Model\Config
      */
     private $config;
 
     /**
-     * @param \Magento\Framework\Model\Context                        $context
-     * @param \Magento\Framework\Registry                             $registry
-     * @param \Magento\Framework\Api\ExtensionAttributesFactory       $extensionFactory
-     * @param \Magento\Framework\Api\AttributeValueFactory            $customAttributeFactory
-     * @param \Magento\Payment\Helper\Data                            $paymentData
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface      $scopeConfig
-     * @param \Magento\Payment\Model\Method\Logger                    $logger
-     * @param \Magento\Sales\Api\TransactionRepositoryInterface       $transactionRepository
-     * @param BuilderInterface                                        $transactionBuilder
-     * @param \netgiro\gateway\Model\Config                           $config
-     * @param \Magento\Framework\HTTP\Client\Curl                     $curl
-     * @param \Magento\Framework\Controller\Result\JsonFactory        $jsonFactory
-     * @param \Magento\Framework\Model\ResourceModel\AbstractResource $resource
-     * @param \Magento\Framework\Data\Collection\AbstractDb           $resourceCollection
-     * @param array                                                   $data
+     * @param Context                         $context
+     * @param Registry                        $registry
+     * @param ExtensionAttributesFactory      $extensionFactory
+     * @param AttributeValueFactory           $customAttributeFactory
+     * @param Data                            $paymentData
+     * @param ScopeConfigInterface            $scopeConfig
+     * @param Logger                          $logger
+     * @param TransactionRepositoryInterface  $transactionRepository
+     * @param BuilderInterface                $transactionBuilder
+     * @param Config                          $config
+     * @param Curl                            $curl
+     * @param JsonFactory                     $jsonFactory
+     * @param AbstractResource|null           $resource
+     * @param AbstractDb|null                 $resourceCollection
+     * @param array                           $data
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
-        \Magento\Framework\Model\Context $context,
-        \Magento\Framework\Registry $registry,
-        \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
-        \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory,
-        \Magento\Payment\Helper\Data $paymentData,
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\Payment\Model\Method\Logger $logger,
-        \Magento\Sales\Api\TransactionRepositoryInterface $transactionRepository,
+        Context $context,
+        Registry $registry,
+        ExtensionAttributesFactory $extensionFactory,
+        AttributeValueFactory $customAttributeFactory,
+        Data $paymentData,
+        ScopeConfigInterface $scopeConfig,
+        Logger $logger,
+        TransactionRepositoryInterface $transactionRepository,
         BuilderInterface $transactionBuilder,
-        \netgiro\gateway\Model\Config $config,
-        \Magento\Framework\HTTP\Client\Curl $curl,
-        \Magento\Framework\Controller\Result\JsonFactory $jsonFactory,
-        \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
-        \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
-        array $data = [],
+        Config $config,
+        Curl $curl,
+        JsonFactory $jsonFactory,
+        AbstractResource $resource = null,
+        AbstractDb $resourceCollection = null,
+        array $data = []
     ) {
         $this->transactionRepository = $transactionRepository;
         $this->curl = $curl;
@@ -197,7 +209,6 @@ class Netgiro extends AbstractMethod
     {
         return (string)number_format($number, 2);
     }
-
 
     /**
      * Send payment cancellation request.

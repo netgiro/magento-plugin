@@ -33,11 +33,25 @@ class Response extends Action
      * @var OrderSender
      */
     private $orderSender;
+
     /**
+     * Helper for response validation
+     *
      * @var Validation
      */
+
     private $validation;
 
+    /**
+     * Response constructor.
+     *
+     * @param Context                        $context
+     * @param OrderManagementInterface       $orderManagement
+     * @param OrderRepository                $orderRepository
+     * @param TransactionRepositoryInterface $transactionRepository
+     * @param OrderSender                    $orderSender
+     * @param Validation                     $validation
+     */
     public function __construct(
         Context $context,
         OrderManagementInterface $orderManagement,
@@ -54,6 +68,12 @@ class Response extends Action
         $this->validation = $validation;
     }
 
+    /**
+     * Execute response controller
+     *
+     * @return void
+     * @throws LocalizedException
+     */
     public function execute()
     {
         $success = $this->getRequest()->getParam('success');
