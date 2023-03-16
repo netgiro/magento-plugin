@@ -51,3 +51,23 @@ magento setup:di:compile
 magento cache:clean
 magento cache:flush
 ```
+
+## Development environment
+To add latest development version of plugin to environment run and enable it with command 
+```
+docker cp ./magento_netgiro magent-netgiro-plugin_magento_1:/bitnami/magento/app/code/netgiro &&
+docker exec -it magent-netgiro-plugin_magento_1 bash
+
+cd /bitnami/magento &&
+php bin/magento module:enable netgiro_gateway &&
+php bin/magento setup:upgrade &&
+php bin/magento setup:di:compile &&
+php bin/magento cache:clean &&
+php bin/magento cache:flush
+```
+
+## Known issues
+When performing refund and the magento framework throws an error then it is possible that the refund gets refunded in Netgíró without any indication that the refund was successful in the magento UI 
+    - Possible solution would be to cancel the whole order and create a new one with.
+
+In the change call i send inn "quantity"=> 1000, it should be "quantity"=> 1.

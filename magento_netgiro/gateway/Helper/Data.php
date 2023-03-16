@@ -10,33 +10,32 @@ use Magento\Framework\App\Helper\Context;
 class Data extends AbstractHelper
 {
 
-	const MODULE_NAME = 'netgiro_gateway';
+    const MODULE_NAME = 'netgiro_gateway';
 
-	/**
-	 * @param \Magento\Framework\Module\ModuleListInterface $moduleList
-	 */
-	protected $_moduleList;
+    /**
+     * @param \Magento\Framework\Module\ModuleListInterface $moduleList
+     */
+    protected $_moduleList;
 
-	public function __construct(
-		Context $context,
-		ModuleListInterface $moduleList)
-	{
-		$this->_moduleList = $moduleList;
-		parent::__construct($context);
-	}
+    public function __construct(
+        Context $context,
+        ModuleListInterface $moduleList
+    ) {
+        $this->_moduleList = $moduleList;
+        parent::__construct($context);
+    }
 
-	public function getConfig($config_path)
-	{
-		return $this->scopeConfig->getValue(
-			$config_path,
-			ScopeInterface::SCOPE_DEFAULT
-		);
-	}
+    public function getConfig($config_path)
+    {
+        return $this->scopeConfig->getValue(
+            $config_path,
+            ScopeInterface::SCOPE_DEFAULT
+        );
+    }
 
-	public function getVersion()
-	{
-		return $this->_moduleList
-			->getOne(self::MODULE_NAME)['setup_version'];
-	}
-
+    public function getVersion()
+    {
+        return $this->_moduleList
+            ->getOne(self::MODULE_NAME)['setup_version'];
+    }
 }
