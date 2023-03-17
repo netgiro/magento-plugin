@@ -9,43 +9,40 @@ use Magento\Sales\Api\TransactionRepositoryInterface;
 class InvoicePay
 {
     /**
-     * Invoice repository
-     *
      * @var InvoiceRepositoryInterface
      */
     protected $invoiceRepository;
 
     /**
-     * Invoice repository
-     *
      * @var TransactionRepositoryInterface
      */
     protected $transactionRepository;
 
-
     /**
-     * Constructor
-     *
-     * @param InvoiceRepositoryInterface $invoiceRepository
+     * @param InvoiceRepositoryInterface     $invoiceRepository
+     * @param TransactionRepositoryInterface $transactionRepository
      */
-    public function __construct(InvoiceRepositoryInterface $invoiceRepository, TransactionRepositoryInterface $transactionRepository)
-    {
+    public function __construct(
+        InvoiceRepositoryInterface $invoiceRepository,
+        TransactionRepositoryInterface $transactionRepository
+    ) {
         $this->invoiceRepository = $invoiceRepository;
         $this->transactionRepository = $transactionRepository;
     }
 
     /**
-     * @param InvoiceRepositoryInterface $subject
-     * @param InvoiceInterface $invoice
+     * Adds Transaction to Order after invoice has been saved
+     *
+     * @param  InvoiceRepositoryInterface $subject
+     * @param  InvoiceInterface           $invoice
      * @return InvoiceInterface
      */
     public function afterSave($subject, $invoice)
     {
-
         $payment = $subject->getOrder()->getPayment();
         $paymentMethodCode = $payment->getMethodInstance()->getCode();
         if ($paymentMethodCode !=='netgiro') {
-            return [$invoice];
+            return $invoice;
         }
 
         $orderId = $invoice->getOrderId();
@@ -59,6 +56,6 @@ class InvoicePay
             $invoice->setTransactionId($transactionId);
             $this->invoiceRepository->save($invoice);
         }
-        return [$invoice];
+        return $invoice;
     }
 }

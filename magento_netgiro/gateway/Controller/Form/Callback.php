@@ -34,12 +34,24 @@ class Callback extends Action
      * @var OrderSender
      */
     private $orderSender;
+    
     /**
      * @var Validation
+     *
+     * The validation instance.
      */
     private $validation;
 
-
+    /**
+     * Constructor.
+     *
+     * @param Context $context
+     * @param OrderManagementInterface $orderManagement
+     * @param OrderRepository $orderRepository
+     * @param TransactionRepositoryInterface $transactionRepository
+     * @param OrderSender $orderSender
+     * @param Validation $validation
+     */
     public function __construct(
         Context $context,
         OrderManagementInterface $orderManagement,
@@ -56,6 +68,12 @@ class Callback extends Action
         $this->validation = $validation;
     }
 
+    /**
+     * Execute the action.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
     public function execute()
     {
         $result = $this->resultFactory

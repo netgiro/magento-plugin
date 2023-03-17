@@ -1,19 +1,53 @@
 <?php
 namespace netgiro\gateway\Model\Payment;
 
+use Magento\Sales\Model\Order\Payment;
 use Magento\Payment\Model\InfoInterface;
 use Magento\Payment\Model\Method\AbstractMethod;
 use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface;
-use Magento\Sales\Model\Order\Payment;
+use Magento\Framework\Model\Context;
+use Magento\Framework\Registry;
+use Magento\Framework\Api\ExtensionAttributesFactory;
+use Magento\Framework\Api\AttributeValueFactory;
+use Magento\Payment\Helper\Data;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Payment\Model\Method\Logger;
+use Magento\Sales\Api\TransactionRepositoryInterface;
+use netgiro\gateway\Model\Config;
+use Magento\Framework\HTTP\Client\Curl;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Model\ResourceModel\AbstractResource;
+use Magento\Framework\Data\Collection\AbstractDb;
 
 class Netgiro extends AbstractMethod
 {
-
+    /**
+     * Payment method code
+     *
+     * @var string
+     */
     protected $_code = 'netgiro';
 
+    /**
+     * Can refund flag
+     *
+     * @var bool
+     */
     protected $_canRefund = true;
+
+    /**
+     * Is gateway flag
+     *
+     * @var bool
+     */
     protected $_isGateway = true;
+
+    /**
+     * Can refund invoice partially flag
+     *
+     * @var bool
+     */
     protected $_canRefundInvoicePartial = true;
 
     /**
@@ -21,6 +55,10 @@ class Netgiro extends AbstractMethod
      */
     protected $transactionRepository;
 
+    /**
+     *
+     * @var \Magento\Framework\HTTP\Client\Curl
+     */
     private $curl;
 
     /**
@@ -39,44 +77,51 @@ class Netgiro extends AbstractMethod
     private $scopeConfig;
 
     /**
-     * @param \Magento\Framework\Model\Context $context
-     * @param \Magento\Framework\Registry $registry
-     * @param \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory
-     * @param \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory
-     * @param \Magento\Sales\Api\TransactionRepositoryInterface $transactionRepository,
-     * @param \Magento\Framework\HTTP\Client\Curl $curl
-     * @param \Magento\Payment\Helper\Data $paymentData
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Magento\Payment\Model\Method\Logger $logger
-     * @param \Magento\Framework\Module\ModuleListInterface $moduleList
-     * @param \Magento\Framework\Stdlib\DateTime\TimezoneInterface $localeDate
-     * @param \Magento\Framework\Model\ResourceModel\AbstractResource $resource
-     * @param \Magento\Framework\Data\Collection\AbstractDb $resourceCollection
-     * @param \Magento\Sales\Api\TransactionRepositoryInterface $transactionRepository
-     * @param array $data
+     * @var \netgiro\gateway\Model\Config
+     */
+    private $config;
+
+    /**
+     * @param Context                         $context
+     * @param Registry                        $registry
+     * @param ExtensionAttributesFactory      $extensionFactory
+     * @param AttributeValueFactory           $customAttributeFactory
+     * @param Data                            $paymentData
+     * @param ScopeConfigInterface            $scopeConfig
+     * @param Logger                          $logger
+     * @param TransactionRepositoryInterface  $transactionRepository
+     * @param BuilderInterface                $transactionBuilder
+     * @param Config                          $config
+     * @param Curl                            $curl
+     * @param JsonFactory                     $jsonFactory
+     * @param AbstractResource|null           $resource
+     * @param AbstractDb|null                 $resourceCollection
+     * @param array                           $data
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
-        \Magento\Framework\Model\Context $context,
-        \Magento\Framework\Registry $registry,
-        \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
-        \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory,
-        \Magento\Payment\Helper\Data $paymentData,
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\Payment\Model\Method\Logger $logger,
-        \Magento\Sales\Api\TransactionRepositoryInterface $transactionRepository,
+        Context $context,
+        Registry $registry,
+        ExtensionAttributesFactory $extensionFactory,
+        AttributeValueFactory $customAttributeFactory,
+        Data $paymentData,
+        ScopeConfigInterface $scopeConfig,
+        Logger $logger,
+        TransactionRepositoryInterface $transactionRepository,
         BuilderInterface $transactionBuilder,
-        \Magento\Framework\HTTP\Client\Curl $curl,
-        \Magento\Framework\Controller\Result\JsonFactory $jsonFactory,
-        \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
-        \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
-        array $data = [],
+        Config $config,
+        Curl $curl,
+        JsonFactory $jsonFactory,
+        AbstractResource $resource = null,
+        AbstractDb $resourceCollection = null,
+        array $data = []
     ) {
         $this->transactionRepository = $transactionRepository;
         $this->curl = $curl;
         $this->scopeConfig = $scopeConfig;
         $this->jsonFactory = $jsonFactory;
         $this->transactionBuilder = $transactionBuilder;
+        $this->config = $config;
 
         parent::__construct(
             $context,
@@ -95,8 +140,8 @@ class Netgiro extends AbstractMethod
     /**
      * Refund capture
      *
-     * @param InfoInterface|Payment|Object $payment
-     * @param float $amount
+     * @param  InfoInterface|Payment|Object $payment
+     * @param  float                        $amount
      * @return $this
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws InvalidTransitionException
@@ -115,7 +160,10 @@ class Netgiro extends AbstractMethod
             throw new \Magento\Framework\Exception\LocalizedException(__('The refund action is not available.'));
         }
 
-        if ($this->formatNumber($payment->getOrder()->getGrandTotal()) == $this->formatNumber($payment->getOrder()->getTotalRefunded())) {
+        $gradTotal = $payment->getOrder()->getGrandTotal();
+        $totalRefunded =  $payment->getOrder()->getTotalRefunded();
+
+        if ($this->formatNumber($gradTotal) == $this->formatNumber($totalRefunded)) {
             $resp = $this->sendPaymentCancelRequest($transaction->getTxnId());
             $resp = json_decode($resp);
             if ($resp->ResultCode == 10201) {
@@ -132,7 +180,10 @@ class Netgiro extends AbstractMethod
             throw new \Exception('Netgíró : ' . $resp->Message);
 
         } else {
-            $resp = $this->sendPaymentChangeRequest($transaction->getTxnId(), $payment->getOrder()->getGrandTotal() - $payment->getOrder()->getTotalRefunded());
+            $resp = $this->sendPaymentChangeRequest(
+                $transaction->getTxnId(),
+                $gradTotal - $totalRefunded
+            );
             $resp = json_decode($resp);
             if ($resp->ResultCode == 200) {
                 $newTransaction = $this->transactionBuilder->setPayment($paymentInstance)
@@ -148,29 +199,37 @@ class Netgiro extends AbstractMethod
         }
     }
 
+    /**
+     * Format a number to a string with two decimal places.
+     *
+     * @param  float $number
+     * @return string
+     */
     private function formatNumber($number)
     {
         return (string)number_format($number, 2);
     }
 
+    /**
+     * Send payment cancellation request.
+     *
+     * @param  int $transactionId
+     * @return string
+     */
     private function sendPaymentCancelRequest($transactionId)
     {
-        $testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
-        if ($testMode) {
-            $action = 'https://test.netgiro.is/api/payment/cancel';
-            $appId = '881E674F-7891-4C20-AFD8-56FE2624C4B5';
-            $secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
-        } else {
-            $action = 'https://securepay.netgiro.is/v1/api/payment/cancel';
-            $appId = $this->scopeConfig->getValue('payment/netgiro/app_id');
-            $secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
-        }
 
-        $postBody = json_encode([
+        $action = $this->config->getAction("payment/cancel");
+        $appId = $this->config->getAppId();
+        $secretKey = $this->config->getSecretKey();
+
+        $postBody = json_encode(
+            [
             'transactionId' => $transactionId,
             'description' => 'Refund via Magento',
             'cancelationFeeAmount' => 0
-        ]);
+            ]
+        );
         
         $nonce = (string) microtime(true) * 10000000;
         $signature = hash('sha256', $secretKey . $nonce . $action . $postBody);
@@ -184,25 +243,24 @@ class Netgiro extends AbstractMethod
         );
 
         $this->curl->post($action, $postBody);
-
-
         return $this->curl->getBody();
     }
+
+    /**
+     * Send payment change request.
+     *
+     * @param  int   $transactionId
+     * @param  float $amount
+     * @return string
+     */
     private function sendPaymentChangeRequest($transactionId, $amount)
     {
+        $action = $this->config->getAction("payment/change");
+        $appId = $this->config->getAppId();
+        $secretKey = $this->config->getSecretKey();
 
-        $testMode = $this->scopeConfig->getValue('payment/netgiro/test_mode');
-        if ($testMode) {
-            $action = 'https://test.netgiro.is/api/payment/change';
-            $appId = '881E674F-7891-4C20-AFD8-56FE2624C4B5';
-            $secretKey = 'YCFd6hiA8lUjZejVcIf/LhRXO4wTDxY0JhOXvQZwnMSiNynSxmNIMjMf1HHwdV6cMN48NX3ZipA9q9hLPb9C1ZIzMH5dvELPAHceiu7LbZzmIAGeOf/OUaDrk2Zq2dbGacIAzU6yyk4KmOXRaSLi8KW8t3krdQSX7Ecm8Qunc/A=';
-        } else {
-            $action = 'https://securepay.netgiro.is/v1/api/payment/change';
-            $appId = $this->scopeConfig->getValue('payment/netgiro/app_id');
-            $secretKey = $this->scopeConfig->getValue('payment/netgiro/secret_key');
-        }
-
-        $postBody = json_encode([
+        $postBody = json_encode(
+            [
                 "transactionId" => $transactionId,
                 "message"=> "Order Changed in Magento2 store",
                 //"referenceNumber"=> "38",
@@ -224,7 +282,8 @@ class Netgiro extends AbstractMethod
                 //"validToTimeUtc"=> "YYYY-mm-ddThh:mm:ss.mmmZ",
                 //"description"=> "",
                 //"ipAddress"=> ""
-                ]);
+            ]
+        );
         $nonce = (string) microtime(true) * 10000000;
         $signature = hash('sha256', $secretKey . $nonce . $action . $postBody);
 
