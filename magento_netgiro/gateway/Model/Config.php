@@ -74,7 +74,7 @@ class Config
             if ($action == 'securepay') {
                 return 'https://securepay.netgiro.is/v1/';
             }
-            return 'https://securepay.netgiro.is/v1/api/' . $action;
+            return 'https://api.netgiro.is/v1/api/' . $action;
         }
     }
 }
