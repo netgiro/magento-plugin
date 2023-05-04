@@ -274,7 +274,7 @@ class Netgiro extends AbstractMethod
                     //"name"=> "",
                     //"description"=> "",
                     "amount" => $amount,
-                    "quantity"=> 1000, // TODO spyrja afhvertju þetta getur ekki verið 1.
+                    "quantity"=> 1000, 
                     "unitPrice" => $amount
                   ]
                 ],
